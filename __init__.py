@@ -64,6 +64,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register services once
     if not hass.services.has_service(DOMAIN, SERVICE_ADD_TRANSACTION):
         await _async_register_services(hass)
+        
+        from . import websocket_api
+        websocket_api.async_setup(hass)
 
     # Register panel once
     if DOMAIN + "_panel_registered" not in hass.data:
@@ -107,7 +110,7 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
         frontend_url_path="budget_book",
-        config={"url": f"{PANEL_URL}/index.html?v={version}"},
+        config={"url": f"{PANEL_URL}/v2.html?v={version}"},
         require_admin=False,
     )
     _LOGGER.info("Registered Budget Book panel")

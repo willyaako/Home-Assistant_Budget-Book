@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>記帳本 V2</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- 引入 Vue 3 (不需編譯) -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div v-if="loading" class="loading">
+      <div class="spinner"></div>
+      <p>{{ loadingMessage }}</p>
+    </div>
+
+    <div v-else id="main">
+      <header>
+        <h1><span class="logo">📒</span> <span>記帳本 (Vue 3 重構版)</span></h1>
+        <div class="header-right">
+          <select v-model="activeBookId" @change="onBookChange">
+            <option v-for="b in books" :key="b.id" :value="b.id">{{ b.name }} ({{ b.currency }})</option>
+          </select>
+          <button class="btn-primary" @click="showAddTx = true">+ 記一筆</button>
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          :class="['tab', { active: activeTab === tab.id }]" 
+          @click="activeTab = tab.id"
+        >
+          {{ tab.name }}
+        </button>
+      </nav>
+
+      <main style="padding: 16px;">
+        <!-- 總覽 -->
+        <section v-show="activeTab === 'home'">
+          <h2>歡迎來到 V2 版本</h2>
+          <p>成功透過 WebSocket 抓取到資料！</p>
+          <div class="metric-grid">
+            <div class="metric metric-primary">
+              <div class="metric-label">交易總數</div>
+              <div class="metric-value">{{ transactions.length }} 筆</div>
+            </div>
+            <div class="metric metric-primary">
+              <div class="metric-label">分類數量</div>
+              <div class="metric-value">{{ categories.length }} 個</div>
+            </div>
+          </div>
+          
+          <div class="card" style="margin-top: 16px;">
+            <div class="card-header">近 5 筆交易紀錄 (WebSocket 即時載入)</div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>分類</th>
+                  <th>金額</th>
+                  <th>備註</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tx in recentTransactions" :key="tx.id">
+                  <td>{{ tx.date }}</td>
+                  <td>{{ getCategoryName(tx.category) }}</td>
+                  <td :style="{ color: tx.type === 'income' ? 'var(--positive-color)' : 'var(--negative-color)' }">
+                    {{ tx.type === 'income' ? '+' : '-' }}{{ tx.amount }}
+                  </td>
+                  <td>{{ tx.note }}</td>
+                </tr>
+                <tr v-if="recentTransactions.length === 0">
+                  <td colspan="4" class="empty">尚無交易</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 交易區塊 -->
+        <section v-show="activeTab === 'tx'">
+          <div class="toolbar">
+            <input type="text" v-model="filters.search" placeholder="搜尋備註、金額…" />
+            <select v-model="filters.type">
+              <option value="">全部類型</option>
+              <option value="income">收入</option>
+              <option value="expense">支出</option>
+            </select>
+            <select v-model="filters.category">
+              <option value="">全部分類</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>類型</th>
+                  <th>分類</th>
+                  <th style="text-align:right">金額</th>
+                  <th>備註</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tx in paginatedTransactions" :key="tx.id">
+                  <td>{{ tx.date }} <small style="color:var(--text-secondary)">{{ tx.time || '' }}</small></td>
+                  <td>{{ tx.type === 'income' ? '收入' : '支出' }}</td>
+                  <td>
+                    <span class="chip-dot" :style="{ background: getCategoryColor(tx.category) }"></span>
+                    {{ getCategoryName(tx.category) }}
+                  </td>
+                  <td style="text-align:right" :class="tx.type === 'income' ? 'positive' : 'negative'">
+                    {{ tx.type === 'income' ? '+' : '-' }}{{ tx.amount }}
+                  </td>
+                  <td>{{ tx.note }}</td>
+                  <td style="text-align:right">
+                    <button class="btn-secondary" @click="deleteTx(tx.id)" style="padding:4px 8px;font-size:12px;">刪除</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredTransactions.length === 0">
+                  <td colspan="6" class="empty">尚無符合條件的交易</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="form-actions" v-if="hasMoreTransactions" style="margin-top:12px;justify-content:center">
+              <button class="btn-secondary" @click="txPage++">載入更多 (已顯示 {{ paginatedTransactions.length }} / {{ filteredTransactions.length }})</button>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- 新增交易 Modal -->
+    <div v-if="showAddTx" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span>新增交易</span>
+          <button class="modal-close" @click="showAddTx = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="tx-type-switch">
+            <button :class="['tx-type-btn', { active: txForm.type === 'expense' }]" @click="txForm.type = 'expense'">支出</button>
+            <button :class="['tx-type-btn', { active: txForm.type === 'income' }]" @click="txForm.type = 'income'">收入</button>
+          </div>
+          <div class="form-row">
+            <label>金額</label>
+            <input type="number" v-model.number="txForm.amount" min="0" placeholder="例如 350" />
+          </div>
+          <div class="form-row">
+            <label>分類</label>
+            <div class="chip-grid">
+              <button 
+                v-for="c in categories.filter(x => x.type === txForm.type)" 
+                :key="c.id"
+                :class="['chip', { active: txForm.category === c.id }]"
+                :style="txForm.category === c.id ? { backgroundColor: c.color, borderColor: c.color, color: '#fff' } : {}"
+                @click="txForm.category = c.id"
+              >
+                {{ c.name }}
+              </button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>日期</label>
+            <input type="date" v-model="txForm.date" />
+          </div>
+          <div class="form-row">
+            <label>備註</label>
+            <input type="text" v-model="txForm.note" placeholder="選填，例如「便當」" />
+            
+            <!-- 常用備註標籤 -->
+            <div class="note-tags-wrap" v-if="currentCategoryNoteTags.length > 0">
+              <div class="note-tags-header">
+                <span class="note-tags-title">常用備註標籤</span>
+                <span class="note-tags-hint">點選快速填入</span>
+              </div>
+              <div class="note-tags-list">
+                <span 
+                  v-for="tag in currentCategoryNoteTags" 
+                  :key="tag"
+                  :class="['note-tag-chip', { selected: txForm.note.includes(tag) }]"
+                  @click="toggleNoteTag(tag)"
+                >
+                  <span class="note-tag-text">{{ tag }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showAddTx = false">取消</button>
+          <button class="btn-primary" @click="submitTx" :disabled="!txForm.amount || !txForm.category">儲存</button>
+        </div>
+      </div>
+    </div>
+        <!-- 圖表區塊 -->
+        <section v-show="activeTab === 'charts'">
+          <div class="card">
+            <div class="card-header">近 6 個月收入 vs 支出</div>
+            <div class="chart-wrap"><canvas id="v2-chart-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-header">本月支出組成</div>
+            <div class="chart-wrap"><canvas id="v2-chart-pie"></canvas></div>
+          </div>
+        </section>
+
+        <!-- 分類區塊 -->
+        <section v-show="activeTab === 'categories'">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+              <span>支出分類</span>
+              <button class="btn-primary" @click="openAddCat('expense')">+ 新增支出分類</button>
+            </div>
+            <div class="cat-grid">
+              <div v-for="c in categories.filter(x => x.type === 'expense')" :key="c.id" class="cat-card">
+                <div class="cat-card-header">
+                  <div class="cat-info">
+                    <span class="chip-dot" :style="{ background: c.color }"></span>
+                    <span class="cat-name">{{ c.name }}</span>
+                  </div>
+                  <button class="btn-secondary" style="padding:2px 6px" @click="deleteCategory(c.id)">刪除</button>
+                </div>
+                <div class="cat-tags-wrap">
+                  <div class="cat-tags-label">常用備註標籤</div>
+                  <div class="cat-tags-list">
+                    <span v-for="tag in c.note_tags || []" :key="tag" class="note-tag-chip">
+                      <span class="note-tag-text">{{ tag }}</span>
+                      <button type="button" class="note-tag-del-btn" @click="deleteNoteTag(c.id, tag)">×</button>
+                    </span>
+                    <span v-if="!c.note_tags || c.note_tags.length === 0" class="note-tags-empty">無標籤</span>
+                    <button class="btn-add-tag" @click="addNoteTag(c.id)">+ 標籤</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+              <span>收入分類</span>
+              <button class="btn-primary" @click="openAddCat('income')">+ 新增收入分類</button>
+            </div>
+            <div class="cat-grid">
+              <div v-for="c in categories.filter(x => x.type === 'income')" :key="c.id" class="cat-card">
+                <div class="cat-card-header">
+                  <div class="cat-info">
+                    <span class="chip-dot" :style="{ background: c.color }"></span>
+                    <span class="cat-name">{{ c.name }}</span>
+                  </div>
+                  <button class="btn-secondary" style="padding:2px 6px" @click="deleteCategory(c.id)">刪除</button>
+                </div>
+                <div class="cat-tags-wrap">
+                  <div class="cat-tags-label">常用備註標籤</div>
+                  <div class="cat-tags-list">
+                    <span v-for="tag in c.note_tags || []" :key="tag" class="note-tag-chip">
+                      <span class="note-tag-text">{{ tag }}</span>
+                      <button type="button" class="note-tag-del-btn" @click="deleteNoteTag(c.id, tag)">×</button>
+                    </span>
+                    <span v-if="!c.note_tags || c.note_tags.length === 0" class="note-tags-empty">無標籤</span>
+                    <button class="btn-add-tag" @click="addNoteTag(c.id)">+ 標籤</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 預算區塊 -->
+        <section v-show="activeTab === 'budgets'">
+          <div class="card">
+            <div class="card-header">本月預算管理</div>
+            <p class="hint">點擊分類來設定該分類的每月預算上限。</p>
+            <div class="chip-grid">
+              <button 
+                v-for="c in categories.filter(x => x.type === 'expense')" 
+                :key="c.id"
+                class="chip"
+                @click="openAddBudget(c.id)"
+              >
+                {{ c.name }} : {{ budgets[c.id] || '未設定' }}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 固定支出 -->
+        <section v-show="activeTab === 'recurring'">
+          <div class="card">
+            <div class="card-header">固定支出 (自動記帳)</div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>名稱</th>
+                  <th>分類</th>
+                  <th>每月幾號</th>
+                  <th>金額</th>
+                  <th>上次執行</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in recurring" :key="r.id">
+                  <td>{{ r.name }}</td>
+                  <td>{{ getCategoryName(r.category) }}</td>
+                  <td>{{ r.day_of_month }} 日</td>
+                  <td>{{ r.amount }}</td>
+                  <td>{{ r.last_run_date || '從未執行' }}</td>
+                  <td>
+                    <button class="btn-secondary" @click="deleteRecurring(r.id)">刪除</button>
+                  </td>
+                </tr>
+                <tr v-if="recurring.length === 0">
+                  <td colspan="6" class="empty">無設定</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="form-actions" style="margin-top: 12px;">
+              <button class="btn-primary" @click="showAddRecurring = true">+ 新增固定支出</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 設定區塊 -->
+        <section v-show="activeTab === 'settings'">
+          <div class="card">
+            <div class="card-header">記帳本管理</div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>名稱</th>
+                  <th>幣別</th>
+                  <th>交易數</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="b in books" :key="b.id">
+                  <td>{{ b.name }}</td>
+                  <td>{{ b.currency }}</td>
+                  <td>{{ b.transaction_count }}</td>
+                  <td>
+                    <button class="btn-secondary" @click="deleteBook(b.id)" :disabled="books.length <= 1">刪除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="form-actions" style="margin-top: 12px;">
+              <button class="btn-primary" @click="showAddBook = true">+ 新增記帳本</button>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- 新增分類 Modal -->
+    <div v-if="showAddCat" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span>新增{{ catForm.type === 'income' ? '收入' : '支出' }}分類</span>
+          <button class="modal-close" @click="showAddCat = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>名稱</label>
+            <input type="text" v-model="catForm.name" placeholder="例如：餐飲" />
+          </div>
+          <div class="form-row">
+            <label>顏色</label>
+            <input type="color" v-model="catForm.color" style="width:60px;height:38px;padding:2px" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showAddCat = false">取消</button>
+          <button class="btn-primary" @click="submitCat" :disabled="!catForm.name">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增固定支出 Modal -->
+    <div v-if="showAddRecurring" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span>新增固定支出</span>
+          <button class="modal-close" @click="showAddRecurring = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>名稱</label>
+            <input type="text" v-model="recForm.name" />
+          </div>
+          <div class="form-row">
+            <label>金額</label>
+            <input type="number" v-model.number="recForm.amount" min="0" />
+          </div>
+          <div class="form-row">
+            <label>分類</label>
+            <select v-model="recForm.category">
+              <option v-for="c in categories.filter(x => x.type === 'expense')" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>每月幾號 (1-31)</label>
+            <input type="number" v-model.number="recForm.day_of_month" min="1" max="31" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showAddRecurring = false">取消</button>
+          <button class="btn-primary" @click="submitRecurring" :disabled="!recForm.name || !recForm.amount || !recForm.category || !recForm.day_of_month">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增記帳本 Modal -->
+    <div v-if="showAddBook" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <span>新增記帳本</span>
+          <button class="modal-close" @click="showAddBook = false">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-row">
+            <label>名稱</label>
+            <input type="text" v-model="bookForm.name" />
+          </div>
+          <div class="form-row">
+            <label>幣別</label>
+            <input type="text" v-model="bookForm.currency" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" @click="showAddBook = false">取消</button>
+          <button class="btn-primary" @click="submitBook" :disabled="!bookForm.name">儲存</button>
+        </div>
+      </div>
+    </div>
+</body>
+</html>
