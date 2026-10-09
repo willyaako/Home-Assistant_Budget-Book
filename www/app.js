@@ -8,6 +8,14 @@ const fmtSigned = (n) => n == null ? '—' : (n >= 0 ? '+' : '') + Math.round(n)
 const SUPPORTED_LANGS = ['en', 'zh-Hant', 'zh-Hans'];
 const LOCALE_STORAGE_KEY = 'budgetBookLanguage';
 
+const escapeHtml = (str) => String(str ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+const escapeAttr = (str) => escapeHtml(str);
+
 function log(...args) {
   console.log('[BudgetBook]', ...args);
   try { if (window._bb_logs) window._bb_logs.push(args.map(a => String(a)).join(' ')); } catch(e){}
@@ -44,7 +52,7 @@ function getHassLanguage() {
 
 async function loadLocales() {
   const pairs = await Promise.all(SUPPORTED_LANGS.map(async (lang) => {
-    const resp = await fetch(`locales/${lang}.json?v=4`);
+    const resp = await fetch(`locales/${lang}.json?v=6`);
     if (!resp.ok) throw new Error(`Cannot load locale ${lang}`);
     return [lang, await resp.json()];
   }));
@@ -443,24 +451,34 @@ function renderHome() {
   const recentEl = $('home-recent-tbody');
   const txs = [...(book?.transactions || [])].sort((a, b) => txSortKey(b).localeCompare(txSortKey(a))).slice(0, 8);
   if (txs.length === 0) {
-    recentEl.innerHTML = `<tr><td colspan="4" class="empty">${t('empty.no_recent_transactions')}</td></tr>`;
+    recentEl.innerHTML = `<tr><td colspan="5" class="empty">${t('empty.no_recent_transactions')}</td></tr>`;
   } else {
-    recentEl.innerHTML = txs.map(t => {
-      const cat = book.categories.find(c => c.id === t.category);
+    recentEl.innerHTML = txs.map(tx => {
+      const cat = book.categories.find(c => c.id === tx.category);
       const catBadge = cat
         ? `<span style="display:inline-flex;align-items:center;gap:4px"><span class="cat-color-dot" style="background:${cat.color}"></span>${categoryName(cat)}</span>`
-        : t.category;
-      const sign = t.type === 'expense' ? '-' : '+';
-      const cls = t.type === 'expense' ? 'negative' : 'positive';
+        : tx.category;
+      const sign = tx.type === 'expense' ? '-' : '+';
+      const cls = tx.type === 'expense' ? 'negative' : 'positive';
       return `
         <tr>
-          <td>${fmtTxDate(t)}</td>
+          <td>${fmtTxDate(tx)}</td>
           <td>${catBadge}</td>
-          <td style="text-align:right" class="${cls}">${sign}${fmt(t.amount)}</td>
-          <td style="color:var(--text-secondary)">${t.note || '—'}</td>
+          <td style="text-align:right" class="${cls}">${sign}${fmt(tx.amount)}</td>
+          <td style="color:var(--text-secondary)">${escapeHtml(tx.note) || '—'}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="edit-btn" data-edit-tx-id="${tx.id}" title="${tr('action.edit')}">✎</button>
+          </td>
         </tr>
       `;
     }).join('');
+
+    recentEl.querySelectorAll('.edit-btn').forEach(b => {
+      b.onclick = () => {
+        const tx = book.transactions.find(x => x.id === b.dataset.editTxId);
+        if (tx) openTxModal(tx);
+      };
+    });
   }
 }
 
@@ -505,12 +523,12 @@ function applyTxFilters() {
   const catF = $('tx-cat-filter').value;
   const monthF = $('tx-month-filter').value;
 
-  let filtered = book.transactions.filter(t => {
-    if (typeF && t.type !== typeF) return false;
-    if (catF && t.category !== catF) return false;
-    if (monthF && !t.date.startsWith(monthF)) return false;
+  let filtered = book.transactions.filter(tx => {
+    if (typeF && tx.type !== typeF) return false;
+    if (catF && tx.category !== catF) return false;
+    if (monthF && !tx.date.startsWith(monthF)) return false;
     if (search) {
-      const blob = `${t.date} ${t.amount} ${t.note || ''} ${getCatName(book, t.category)}`.toLowerCase();
+      const blob = `${tx.date} ${tx.amount} ${tx.note || ''} ${getCatName(book, tx.category)}`.toLowerCase();
       if (!blob.includes(search)) return false;
     }
     return true;
@@ -523,25 +541,35 @@ function applyTxFilters() {
     $('tx-empty').textContent = book.transactions.length ? t('empty.no_matching_transactions') : t('empty.no_transactions');
   } else {
     $('tx-empty').style.display = 'none';
-    tbody.innerHTML = filtered.map(t => {
-      const cat = book.categories.find(c => c.id === t.category);
+    tbody.innerHTML = filtered.map(tx => {
+      const cat = book.categories.find(c => c.id === tx.category);
       const catBadge = cat
         ? `<span style="display:inline-flex;align-items:center;gap:4px"><span class="cat-color-dot" style="background:${cat.color}"></span>${categoryName(cat)}</span>`
-        : t.category;
-      const sign = t.type === 'expense' ? '-' : '+';
-      const cls = t.type === 'expense' ? 'negative' : 'positive';
-      const typeBadge = `<span class="badge badge-${t.type}">${tr(`type.${t.type}`)}</span>`;
+        : tx.category;
+      const sign = tx.type === 'expense' ? '-' : '+';
+      const cls = tx.type === 'expense' ? 'negative' : 'positive';
+      const typeBadge = `<span class="badge badge-${tx.type}">${tr(`type.${tx.type}`)}</span>`;
       return `
         <tr>
-          <td>${fmtTxDate(t)}</td>
+          <td>${fmtTxDate(tx)}</td>
           <td>${typeBadge}</td>
           <td>${catBadge}</td>
-          <td style="text-align:right" class="${cls}">${sign}${fmt(t.amount)}</td>
-          <td style="color:var(--text-secondary)">${t.note || '—'}</td>
-          <td><button class="del-btn" data-tx-id="${t.id}">×</button></td>
+          <td style="text-align:right" class="${cls}">${sign}${fmt(tx.amount)}</td>
+          <td style="color:var(--text-secondary)">${escapeHtml(tx.note) || '—'}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="edit-btn" data-edit-tx-id="${tx.id}" title="${tr('action.edit')}">✎</button>
+            <button class="del-btn" data-tx-id="${tx.id}" title="${tr('action.delete')}">×</button>
+          </td>
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('.edit-btn').forEach(b => {
+      b.onclick = () => {
+        const tx = book.transactions.find(x => x.id === b.dataset.editTxId);
+        if (tx) openTxModal(tx);
+      };
+    });
 
     tbody.querySelectorAll('.del-btn').forEach(b => {
       b.onclick = async () => {
@@ -673,9 +701,29 @@ function renderCategories() {
     // Don't allow deleting the last category of a type
     const canDelete = list.length > 1;
     return list.map(c => `
-      <div class="chip cat-chip" title="${c.id}">
-        <span class="chip-dot" style="background:${c.color}"></span>${categoryName(c)}
-        ${canDelete ? `<button class="cat-del-btn" data-del-cat="${c.id}" data-del-name="${categoryName(c)}" title="${t('action.delete')}">×</button>` : ''}
+      <div class="cat-card">
+        <div class="cat-card-header">
+          <div class="cat-info">
+            <span class="chip-dot" style="background:${c.color}"></span>
+            <span class="cat-name">${categoryName(c)}</span>
+          </div>
+          ${canDelete ? `<button class="cat-del-btn" data-del-cat="${c.id}" data-del-name="${categoryName(c)}" title="${t('action.delete')}">×</button>` : ''}
+        </div>
+        <div class="cat-tags-wrap">
+          <div class="cat-tags-label">${t('field.note_tags')}</div>
+          <div class="cat-tags-list">
+            ${(c.note_tags && c.note_tags.length > 0)
+              ? c.note_tags.map(tag => `
+                  <span class="note-tag-chip">
+                    <span class="note-tag-text">${escapeHtml(tag)}</span>
+                    <button type="button" class="note-tag-del-btn" data-cat-id="${c.id}" data-del-tag="${escapeAttr(tag)}" title="${t('action.delete')}">×</button>
+                  </span>
+                `).join('')
+              : `<span class="note-tags-empty">${t('empty.no_tags')}</span>`
+            }
+            <button type="button" class="btn-add-tag" data-add-tag-cat="${c.id}">+ ${t('field.note_tags')}</button>
+          </div>
+        </div>
       </div>
     `).join('');
   };
@@ -689,6 +737,30 @@ function renderCategories() {
       try {
         await callService('budget_book', 'delete_category', { category: b.dataset.delCat });
       } catch (e) { alert(t('alert.delete_failed', { message: e.message })); }
+    };
+  });
+
+  document.querySelectorAll('#tab-categories .note-tag-del-btn').forEach(b => {
+    b.onclick = async (ev) => {
+      ev.stopPropagation();
+      const catId = b.dataset.catId;
+      const tag = b.dataset.delTag;
+      if (!confirm(t('confirm.delete_tag', { tag }))) return;
+      try {
+        await callService('budget_book', 'delete_note_tag', { category: catId, tag });
+      } catch (e) { alert(t('alert.delete_failed', { message: e.message })); }
+    };
+  });
+
+  document.querySelectorAll('#tab-categories [data-add-tag-cat]').forEach(b => {
+    b.onclick = async () => {
+      const catId = b.dataset.addTagCat;
+      const tag = prompt(t('prompt.new_tag'));
+      if (tag && tag.trim()) {
+        try {
+          await callService('budget_book', 'add_note_tag', { category: catId, tag: tag.trim() });
+        } catch (e) { alert(t('alert.add_failed', { message: e.message })); }
+      }
     };
   });
 }
@@ -783,7 +855,7 @@ function renderSettings() {
       <tr>
         <td>${b.name}${isActive ? ` <span class="badge badge-today">${t('settings.active')}</span>` : ''}</td>
         <td>${b.currency || 'TWD'}</td>
-        <td>${b.transaction_count}</td>
+        <td>${b.transaction_count ?? (b.transactions || []).length}</td>
         <td>
           <button class="btn-secondary" data-book-rename="${b.id}" data-book-name="${b.name}">${t('action.rename')}</button>
           ${!isActive ? `<button class="btn-secondary" data-book-activate="${b.id}">${t('action.switch')}</button>` : ''}
@@ -870,20 +942,41 @@ function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function openTxModal() {
-  modalTxType = 'expense';
-  modalTxCategory = null;
-  editingTxId = null;
-  setText('modal-tx-title', 'modal.transaction.title');
-  $('tx-amount').value = '';
-  $('tx-note').value = '';
-  const now = new Date();
-  $('tx-date').value = localDateStr(now);
-  setTimePicker(now);
+function openTxModal(tx = null) {
+  if (tx && tx.id) {
+    editingTxId = tx.id;
+    modalTxType = tx.type;
+    modalTxCategory = tx.category;
+    setText('modal-tx-title', 'modal.transaction.edit_title');
+    $('tx-amount').value = tx.amount;
+    $('tx-date').value = tx.date;
+    if (tx.time) {
+      const [h24, m] = tx.time.split(':').map(Number);
+      if (!$('tx-hour').options.length) initTimePicker();
+      $('tx-ampm').value = h24 < 12 ? 'am' : 'pm';
+      $('tx-hour').value = String(h24 % 12 === 0 ? 12 : h24 % 12);
+      $('tx-minute').value = String(m).padStart(2, '0');
+    } else {
+      setTimePicker(new Date());
+    }
+    $('tx-note').value = tx.note || '';
+  } else {
+    editingTxId = null;
+    modalTxType = 'expense';
+    modalTxCategory = null;
+    setText('modal-tx-title', 'modal.transaction.title');
+    $('tx-amount').value = '';
+    $('tx-note').value = '';
+    const now = new Date();
+    $('tx-date').value = localDateStr(now);
+    setTimePicker(now);
+  }
+
   document.querySelectorAll('.tx-type-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.type === 'expense');
+    b.classList.toggle('active', b.dataset.type === modalTxType);
   });
   renderCatPicker();
+  renderNoteTags();
   openModal('modal-tx');
   setTimeout(() => $('tx-amount').focus(), 100);
 }
@@ -902,13 +995,85 @@ function renderCatPicker() {
     ch.onclick = () => {
       modalTxCategory = ch.dataset.cat;
       picker.querySelectorAll('.chip').forEach(x => x.classList.toggle('selected', x.dataset.cat === modalTxCategory));
+      renderNoteTags();
     };
   });
-  // Auto-select first
-  if (!modalTxCategory && cats.length > 0) {
+  // Auto-select first if none selected or not in current list
+  if ((!modalTxCategory || !cats.some(c => c.id === modalTxCategory)) && cats.length > 0) {
     modalTxCategory = cats[0].id;
-    picker.querySelector('.chip').classList.add('selected');
+    const firstChip = picker.querySelector('.chip');
+    if (firstChip) firstChip.classList.add('selected');
   }
+}
+
+function renderNoteTags() {
+  const wrap = $('tx-note-tags');
+  if (!wrap) return;
+  const book = getActiveBook();
+  if (!book || !modalTxCategory) {
+    wrap.innerHTML = `<span class="note-tags-empty">${t('empty.no_tags')}</span>`;
+    return;
+  }
+  const cat = book.categories.find(c => c.id === modalTxCategory);
+  const tags = (cat && cat.note_tags) ? cat.note_tags : [];
+  if (tags.length === 0) {
+    wrap.innerHTML = `<span class="note-tags-empty">${t('empty.no_tags')}</span>`;
+    return;
+  }
+
+  const currentVal = ($('tx-note').value || '').trim();
+  wrap.innerHTML = tags.map(tag => {
+    const isSelected = currentVal === tag;
+    return `
+      <span class="note-tag-chip ${isSelected ? 'selected' : ''}" data-tag="${escapeAttr(tag)}">
+        <span class="note-tag-text">${escapeHtml(tag)}</span>
+        <button type="button" class="note-tag-del-btn" data-del-tag="${escapeAttr(tag)}" title="${t('action.delete')}">×</button>
+      </span>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.note-tag-chip').forEach(chip => {
+    chip.onclick = (e) => {
+      if (e.target.closest('.note-tag-del-btn')) return;
+      const tag = chip.dataset.tag;
+      const input = $('tx-note');
+      if (input.value.trim() === tag) {
+        input.value = '';
+      } else {
+        input.value = tag;
+      }
+      updateNoteTagHighlights();
+    };
+  });
+
+  wrap.querySelectorAll('.note-tag-del-btn').forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      const tag = btn.dataset.delTag;
+      if (!confirm(t('confirm.delete_tag', { tag }))) return;
+      try {
+        await callService('budget_book', 'delete_note_tag', {
+          category: modalTxCategory,
+          tag
+        });
+        if (cat && cat.note_tags) {
+          cat.note_tags = cat.note_tags.filter(t => t !== tag);
+        }
+        renderNoteTags();
+      } catch (err) {
+        alert(t('alert.delete_failed', { message: err.message }));
+      }
+    };
+  });
+}
+
+function updateNoteTagHighlights() {
+  const wrap = $('tx-note-tags');
+  if (!wrap) return;
+  const currentVal = ($('tx-note').value || '').trim();
+  wrap.querySelectorAll('.note-tag-chip').forEach(chip => {
+    chip.classList.toggle('selected', chip.dataset.tag === currentVal);
+  });
 }
 
 function openBookModal() {
@@ -957,12 +1122,12 @@ function openCatModal(type) {
 
 function bindEvents() {
   // Tabs
-  document.querySelectorAll('.tab').forEach(t => {
-    t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(tabEl => {
+    tabEl.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      $(`tab-${t.dataset.tab}`).classList.add('active');
+      tabEl.classList.add('active');
+      $(`tab-${tabEl.dataset.tab}`).classList.add('active');
       render();
     };
   });
@@ -994,23 +1159,35 @@ function bindEvents() {
       modalTxCategory = null;
       document.querySelectorAll('.tx-type-btn').forEach(x => x.classList.toggle('active', x === b));
       renderCatPicker();
+      renderNoteTags();
     };
   });
+
+  $('tx-note').addEventListener('input', updateNoteTagHighlights);
 
   $('tx-submit').onclick = async () => {
     const amount = parseFloat($('tx-amount').value);
     const date = $('tx-date').value;
     const time = getTimePicker();
-    const note = $('tx-note').value;
+    const note = $('tx-note').value.trim();
     if (!amount || amount <= 0) { alert(t('alert.required_amount')); return; }
     if (!date) { alert(t('alert.required_date')); return; }
     if (!modalTxCategory) { alert(t('alert.required_category')); return; }
     try {
-      await callService('budget_book', 'add_transaction', {
-        date, time, type: modalTxType, amount, category: modalTxCategory, note
-      });
+      if (editingTxId) {
+        await callService('budget_book', 'update_transaction', {
+          transaction_id: editingTxId,
+          date, time, type: modalTxType, amount, category: modalTxCategory, note
+        });
+      } else {
+        await callService('budget_book', 'add_transaction', {
+          date, time, type: modalTxType, amount, category: modalTxCategory, note
+        });
+      }
       closeModal('modal-tx');
-    } catch (e) { alert(t('alert.add_failed', { message: e.message })); }
+    } catch (e) {
+      alert(t(editingTxId ? 'alert.update_failed' : 'alert.add_failed', { message: e.message }));
+    }
   };
 
   // TX filters

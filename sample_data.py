@@ -15,12 +15,21 @@ def build_sample() -> dict:
     """Build a complete sample dataset with two demo books."""
     today = date.today()
 
-    def cats():
+    def cats(tx_list=None):
+        notes_by_cat = {}
+        if tx_list:
+            for t in tx_list:
+                c_id = t.get("category")
+                n = (t.get("note") or "").strip()
+                if c_id and n:
+                    notes_by_cat.setdefault(c_id, [])
+                    if n not in notes_by_cat[c_id]:
+                        notes_by_cat[c_id].append(n)
         result = []
         for c in DEFAULT_INCOME_CATEGORIES:
-            result.append({**c, "type": "income"})
+            result.append({**c, "type": "income", "note_tags": list(notes_by_cat.get(c["id"], []))})
         for c in DEFAULT_EXPENSE_CATEGORIES:
-            result.append({**c, "type": "expense"})
+            result.append({**c, "type": "expense", "note_tags": list(notes_by_cat.get(c["id"], []))})
         return result
 
     # Book 1: Daily life
@@ -72,7 +81,7 @@ def build_sample() -> dict:
         "currency": "TWD",
         "created_at": today.isoformat(),
         "transactions": book1_txs,
-        "categories": cats(),
+        "categories": cats(book1_txs),
         "budgets": {
             "food": 8000,
             "transport": 1500,
@@ -146,7 +155,7 @@ def build_sample() -> dict:
         "currency": "TWD",
         "created_at": today.isoformat(),
         "transactions": book2_txs,
-        "categories": cats(),
+        "categories": cats(book2_txs),
         "budgets": {},
         "recurring": [],
     }

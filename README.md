@@ -30,6 +30,8 @@ Current release: `v1.1.1`
 
 - Manage multiple budget books for household, personal, or project expenses.
 - Record income and expenses with categories, notes, dates, and times.
+- Edit existing transactions at any time to modify amount, date/time, category, and notes.
+- Category-based note tags: transaction notes are automatically saved as tags under their respective category for quick one-click reuse; each category maintains independent tags, manageable from the Categories tab.
 - Track monthly expenses, monthly income, monthly balance, and total balance.
 - View category spending, six-month trends, and budget usage charts.
 - Set monthly category budgets with 80% warning and over-budget alerts.

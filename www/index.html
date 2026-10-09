@@ -72,7 +72,7 @@
           <div class="card">
             <div class="card-header" data-i18n="home.recent">近期交易</div>
             <table class="data-table">
-              <thead><tr><th data-i18n="table.date">日期</th><th data-i18n="table.category">分類</th><th style="text-align:right" data-i18n="table.amount">金額</th><th data-i18n="table.note">備註</th></tr></thead>
+              <thead><tr><th data-i18n="table.date">日期</th><th data-i18n="table.category">分類</th><th style="text-align:right" data-i18n="table.amount">金額</th><th data-i18n="table.note">備註</th><th></th></tr></thead>
               <tbody id="home-recent-tbody"></tbody>
             </table>
           </div>
@@ -136,14 +136,14 @@
               <button id="btn-add-cat-expense" class="btn-primary" data-i18n="categories.add_expense">+ 新增支出分類</button>
             </div>
             <p class="hint" data-i18n="categories.hint">各記帳本的分類獨立不共用。刪除分類會一併移除其預算設定,原有交易自動改歸「其他」。</p>
-            <div id="cat-list-expense" class="chip-grid"></div>
+            <div id="cat-list-expense" class="cat-grid"></div>
           </div>
           <div class="card">
             <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
               <span data-i18n="categories.income">收入分類</span>
               <button id="btn-add-cat-income" class="btn-primary" data-i18n="categories.add_income">+ 新增收入分類</button>
             </div>
-            <div id="cat-list-income" class="chip-grid"></div>
+            <div id="cat-list-income" class="cat-grid"></div>
           </div>
         </section>
 
@@ -267,6 +267,13 @@
           <div class="form-row">
             <label data-i18n="field.note">備註</label>
             <input type="text" id="tx-note" placeholder="選填,例如「便當」" data-i18n-placeholder="placeholder.note" />
+            <div id="tx-note-tags-wrap" class="note-tags-wrap">
+              <div class="note-tags-header">
+                <span class="note-tags-title" data-i18n="field.note_tags">常用備註標籤</span>
+                <span class="note-tags-hint" data-i18n="hint.click_tag">點選快速填入</span>
+              </div>
+              <div id="tx-note-tags" class="note-tags-list"></div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -395,6 +402,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

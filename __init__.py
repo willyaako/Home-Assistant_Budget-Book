@@ -20,6 +20,7 @@ from .analytics import find_due_recurring
 from .const import (
     DOMAIN,
     PLATFORMS,
+    SERVICE_ADD_NOTE_TAG,
     SERVICE_ADD_RECURRING,
     SERVICE_ADD_TRANSACTION,
     SERVICE_ADD_CATEGORY,
@@ -27,6 +28,7 @@ from .const import (
     SERVICE_CREATE_BOOK,
     SERVICE_DELETE_BOOK,
     SERVICE_DELETE_CATEGORY,
+    SERVICE_DELETE_NOTE_TAG,
     SERVICE_DELETE_RECURRING,
     SERVICE_DELETE_TRANSACTION,
     SERVICE_LOAD_SAMPLE,
@@ -34,6 +36,7 @@ from .const import (
     SERVICE_REPLACE_DATA,
     SERVICE_RUN_RECURRING,
     SERVICE_SET_BUDGET,
+    SERVICE_UPDATE_TRANSACTION,
     SIGNAL_UPDATE,
     TYPE_EXPENSE,
     TYPE_INCOME,
@@ -156,6 +159,17 @@ ADD_TX_SCHEMA = vol.Schema({
     vol.Optional("note", default=""): cv.string,
 })
 
+UPDATE_TX_SCHEMA = vol.Schema({
+    vol.Optional("book_id"): cv.string,
+    vol.Required("transaction_id"): cv.string,
+    vol.Required("date"): cv.string,
+    vol.Optional("time"): vol.Any(None, vol.Match(r"^([01]\d|2[0-3]):[0-5]\d$")),
+    vol.Required("type"): vol.In([TYPE_INCOME, TYPE_EXPENSE]),
+    vol.Required("amount"): vol.Coerce(float),
+    vol.Optional("category", default="other"): cv.string,
+    vol.Optional("note", default=""): cv.string,
+})
+
 DEL_TX_SCHEMA = vol.Schema({
     vol.Optional("book_id"): cv.string,
     vol.Required("transaction_id"): cv.string,
@@ -192,6 +206,18 @@ ADD_CATEGORY_SCHEMA = vol.Schema({
 DELETE_CATEGORY_SCHEMA = vol.Schema({
     vol.Optional("book_id"): cv.string,
     vol.Required("category"): cv.string,
+})
+
+ADD_NOTE_TAG_SCHEMA = vol.Schema({
+    vol.Optional("book_id"): cv.string,
+    vol.Required("category"): cv.string,
+    vol.Required("tag"): cv.string,
+})
+
+DELETE_NOTE_TAG_SCHEMA = vol.Schema({
+    vol.Optional("book_id"): cv.string,
+    vol.Required("category"): cv.string,
+    vol.Required("tag"): cv.string,
 })
 
 ADD_RECURRING_SCHEMA = vol.Schema({
@@ -237,6 +263,19 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         d = dict(call.data)
         d.pop("book_id", None)
         await store.async_add_transaction(book_id, d)
+        async_dispatcher_send(hass, SIGNAL_UPDATE)
+
+    async def handle_update_tx(call: ServiceCall) -> None:
+        store = _get_store(hass)
+        if not store:
+            return
+        book_id = _active_book_id(dict(call.data))
+        if not book_id:
+            return
+        d = dict(call.data)
+        d.pop("book_id", None)
+        tx_id = d.pop("transaction_id")
+        await store.async_update_transaction(book_id, tx_id, d)
         async_dispatcher_send(hass, SIGNAL_UPDATE)
 
     async def handle_del_tx(call: ServiceCall) -> None:
@@ -328,6 +367,26 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             _LOGGER.warning("Delete category: %s", e)
             raise
 
+    async def handle_add_note_tag(call: ServiceCall) -> None:
+        store = _get_store(hass)
+        if not store:
+            return
+        book_id = _active_book_id(dict(call.data))
+        if not book_id:
+            return
+        await store.async_add_note_tag(book_id, call.data["category"], call.data["tag"])
+        async_dispatcher_send(hass, SIGNAL_UPDATE)
+
+    async def handle_delete_note_tag(call: ServiceCall) -> None:
+        store = _get_store(hass)
+        if not store:
+            return
+        book_id = _active_book_id(dict(call.data))
+        if not book_id:
+            return
+        await store.async_delete_note_tag(book_id, call.data["category"], call.data["tag"])
+        async_dispatcher_send(hass, SIGNAL_UPDATE)
+
     async def handle_add_recurring(call: ServiceCall) -> None:
         store = _get_store(hass)
         if not store:
@@ -377,6 +436,7 @@ async def _async_register_services(hass: HomeAssistant) -> None:
         async_dispatcher_send(hass, SIGNAL_UPDATE)
 
     hass.services.async_register(DOMAIN, SERVICE_ADD_TRANSACTION, handle_add_tx, schema=ADD_TX_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_UPDATE_TRANSACTION, handle_update_tx, schema=UPDATE_TX_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DELETE_TRANSACTION, handle_del_tx, schema=DEL_TX_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CREATE_BOOK, handle_create_book, schema=CREATE_BOOK_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DELETE_BOOK, handle_delete_book, schema=DELETE_BOOK_SCHEMA)
@@ -385,6 +445,8 @@ async def _async_register_services(hass: HomeAssistant) -> None:
     hass.services.async_register(DOMAIN, SERVICE_SET_BUDGET, handle_set_budget, schema=SET_BUDGET_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_ADD_CATEGORY, handle_add_category, schema=ADD_CATEGORY_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DELETE_CATEGORY, handle_delete_category, schema=DELETE_CATEGORY_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_ADD_NOTE_TAG, handle_add_note_tag, schema=ADD_NOTE_TAG_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_DELETE_NOTE_TAG, handle_delete_note_tag, schema=DELETE_NOTE_TAG_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_ADD_RECURRING, handle_add_recurring, schema=ADD_RECURRING_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_DELETE_RECURRING, handle_del_recurring, schema=DEL_RECURRING_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_RUN_RECURRING, handle_run_recurring)
