@@ -1,0 +1,651 @@
+{
+  "books": {
+    "3eae3a21f496": {
+      "id": "3eae3a21f496",
+      "name": "日常開銷",
+      "currency": "TWD",
+      "created_at": "2026-10-09",
+      "transactions": [
+        {
+          "id": "d81dcafb56b4",
+          "date": "2026-10-09",
+          "type": "expense",
+          "amount": 95.0,
+          "category": "food",
+          "note": "便利商店午餐",
+          "recurring_id": null
+        },
+        {
+          "id": "8cd734f609d2",
+          "date": "2026-10-08",
+          "type": "expense",
+          "amount": 320.0,
+          "category": "food",
+          "note": "晚餐聚會",
+          "recurring_id": null
+        },
+        {
+          "id": "7621b5517ddb",
+          "date": "2026-10-07",
+          "type": "expense",
+          "amount": 60.0,
+          "category": "transport",
+          "note": "捷運",
+          "recurring_id": null
+        },
+        {
+          "id": "910f8afbe457",
+          "date": "2026-10-06",
+          "type": "expense",
+          "amount": 1280.0,
+          "category": "shopping",
+          "note": "新衣服",
+          "recurring_id": null
+        },
+        {
+          "id": "f621275ab2dc",
+          "date": "2026-10-04",
+          "type": "expense",
+          "amount": 158.0,
+          "category": "food",
+          "note": "麥當勞",
+          "recurring_id": null
+        },
+        {
+          "id": "a4f8a9045e15",
+          "date": "2026-10-02",
+          "type": "expense",
+          "amount": 850.0,
+          "category": "entertainment",
+          "note": "電影 + 爆米花",
+          "recurring_id": null
+        },
+        {
+          "id": "40048b32cdde",
+          "date": "2026-09-29",
+          "type": "income",
+          "amount": 65000.0,
+          "category": "salary",
+          "note": "5月薪資",
+          "recurring_id": null
+        },
+        {
+          "id": "b89510bb0ed2",
+          "date": "2026-09-29",
+          "type": "expense",
+          "amount": 18000.0,
+          "category": "rent",
+          "note": "5月房租",
+          "recurring_id": null
+        },
+        {
+          "id": "9941f6b52c93",
+          "date": "2026-09-29",
+          "type": "expense",
+          "amount": 390.0,
+          "category": "subscription",
+          "note": "Netflix + Spotify",
+          "recurring_id": null
+        },
+        {
+          "id": "56e5f1d62438",
+          "date": "2026-09-27",
+          "type": "expense",
+          "amount": 1450.0,
+          "category": "food",
+          "note": "週末聚餐",
+          "recurring_id": null
+        },
+        {
+          "id": "a1129f5b39bd",
+          "date": "2026-09-25",
+          "type": "expense",
+          "amount": 245.0,
+          "category": "household",
+          "note": "洗衣精",
+          "recurring_id": null
+        },
+        {
+          "id": "644e59738fc1",
+          "date": "2026-09-23",
+          "type": "expense",
+          "amount": 88.0,
+          "category": "food",
+          "note": "早餐店",
+          "recurring_id": null
+        },
+        {
+          "id": "bf74b162bed1",
+          "date": "2026-09-21",
+          "type": "expense",
+          "amount": 520.0,
+          "category": "medical",
+          "note": "感冒看診",
+          "recurring_id": null
+        },
+        {
+          "id": "bae4a6bef4c1",
+          "date": "2026-09-19",
+          "type": "expense",
+          "amount": 2100.0,
+          "category": "utility",
+          "note": "電費水費",
+          "recurring_id": null
+        },
+        {
+          "id": "9e939a3c9fb8",
+          "date": "2026-09-17",
+          "type": "expense",
+          "amount": 175.0,
+          "category": "transport",
+          "note": "計程車",
+          "recurring_id": null
+        },
+        {
+          "id": "651fc7dc67ac",
+          "date": "2026-09-14",
+          "type": "expense",
+          "amount": 680.0,
+          "category": "food",
+          "note": "晚餐",
+          "recurring_id": null
+        },
+        {
+          "id": "6217ab4dfcb4",
+          "date": "2026-09-12",
+          "type": "expense",
+          "amount": 3200.0,
+          "category": "shopping",
+          "note": "鞋子",
+          "recurring_id": null
+        },
+        {
+          "id": "e4d4ff446286",
+          "date": "2026-09-09",
+          "type": "expense",
+          "amount": 110.0,
+          "category": "food",
+          "note": "午餐",
+          "recurring_id": null
+        },
+        {
+          "id": "c596fe4034f1",
+          "date": "2026-09-06",
+          "type": "expense",
+          "amount": 1850.0,
+          "category": "entertainment",
+          "note": "演唱會門票",
+          "recurring_id": null
+        },
+        {
+          "id": "0310459649d5",
+          "date": "2026-09-04",
+          "type": "income",
+          "amount": 3000.0,
+          "category": "side",
+          "note": "兼差收入",
+          "recurring_id": null
+        },
+        {
+          "id": "a5e6db653905",
+          "date": "2026-09-01",
+          "type": "expense",
+          "amount": 420.0,
+          "category": "food",
+          "note": "週末市場採購",
+          "recurring_id": null
+        },
+        {
+          "id": "eb84ab9607e0",
+          "date": "2026-08-28",
+          "type": "expense",
+          "amount": 60.0,
+          "category": "transport",
+          "note": "公車",
+          "recurring_id": null
+        },
+        {
+          "id": "78b884bc4cb7",
+          "date": "2026-08-25",
+          "type": "expense",
+          "amount": 290.0,
+          "category": "shopping",
+          "note": "日用品",
+          "recurring_id": null
+        },
+        {
+          "id": "1e85823c8421",
+          "date": "2026-08-20",
+          "type": "expense",
+          "amount": 78.0,
+          "category": "food",
+          "note": "飲料",
+          "recurring_id": null
+        },
+        {
+          "id": "0e4aaa1f4b37",
+          "date": "2026-08-15",
+          "type": "expense",
+          "amount": 1100.0,
+          "category": "subscription",
+          "note": "雲端空間年費",
+          "recurring_id": null
+        }
+      ],
+      "categories": [
+        {
+          "id": "salary",
+          "name": "薪資",
+          "icon": "mdi:cash-multiple",
+          "color": "#27AE60",
+          "type": "income",
+          "note_tags": [
+            "5月薪資"
+          ]
+        },
+        {
+          "id": "bonus",
+          "name": "獎金",
+          "icon": "mdi:gift",
+          "color": "#16A085",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "investment",
+          "name": "投資",
+          "icon": "mdi:chart-line",
+          "color": "#2980B9",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "side",
+          "name": "副業",
+          "icon": "mdi:briefcase-plus",
+          "color": "#8E44AD",
+          "type": "income",
+          "note_tags": [
+            "兼差收入"
+          ]
+        },
+        {
+          "id": "income_other",
+          "name": "其他收入",
+          "icon": "mdi:cash-plus",
+          "color": "#95A5A6",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "food",
+          "name": "餐飲",
+          "icon": "mdi:silverware-fork-knife",
+          "color": "#E67E22",
+          "type": "expense",
+          "note_tags": [
+            "便利商店午餐",
+            "晚餐聚會",
+            "麥當勞",
+            "週末聚餐",
+            "早餐店",
+            "晚餐",
+            "午餐",
+            "週末市場採購",
+            "飲料"
+          ]
+        },
+        {
+          "id": "transport",
+          "name": "交通",
+          "icon": "mdi:bus",
+          "color": "#3498DB",
+          "type": "expense",
+          "note_tags": [
+            "捷運",
+            "計程車",
+            "公車"
+          ]
+        },
+        {
+          "id": "shopping",
+          "name": "購物",
+          "icon": "mdi:shopping",
+          "color": "#9B59B6",
+          "type": "expense",
+          "note_tags": [
+            "新衣服",
+            "鞋子",
+            "日用品"
+          ]
+        },
+        {
+          "id": "entertainment",
+          "name": "娛樂",
+          "icon": "mdi:gamepad-variant",
+          "color": "#E74C3C",
+          "type": "expense",
+          "note_tags": [
+            "電影 + 爆米花",
+            "演唱會門票"
+          ]
+        },
+        {
+          "id": "household",
+          "name": "家用",
+          "icon": "mdi:home",
+          "color": "#16A085",
+          "type": "expense",
+          "note_tags": [
+            "洗衣精"
+          ]
+        },
+        {
+          "id": "medical",
+          "name": "醫療",
+          "icon": "mdi:hospital-box",
+          "color": "#C0392B",
+          "type": "expense",
+          "note_tags": [
+            "感冒看診"
+          ]
+        },
+        {
+          "id": "education",
+          "name": "教育",
+          "icon": "mdi:school",
+          "color": "#2980B9",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "subscription",
+          "name": "訂閱",
+          "icon": "mdi:repeat",
+          "color": "#8E44AD",
+          "type": "expense",
+          "note_tags": [
+            "Netflix + Spotify",
+            "雲端空間年費"
+          ]
+        },
+        {
+          "id": "rent",
+          "name": "房租",
+          "icon": "mdi:home-city",
+          "color": "#7F8C8D",
+          "type": "expense",
+          "note_tags": [
+            "5月房租"
+          ]
+        },
+        {
+          "id": "utility",
+          "name": "水電瓦斯",
+          "icon": "mdi:flash",
+          "color": "#F39C12",
+          "type": "expense",
+          "note_tags": [
+            "電費水費"
+          ]
+        },
+        {
+          "id": "other",
+          "name": "其他",
+          "icon": "mdi:dots-horizontal",
+          "color": "#95A5A6",
+          "type": "expense",
+          "note_tags": []
+        }
+      ],
+      "budgets": {
+        "food": 8000,
+        "transport": 1500,
+        "entertainment": 3000,
+        "shopping": 5000,
+        "subscription": 800
+      },
+      "recurring": [
+        {
+          "id": "f286f707a40d",
+          "name": "房租",
+          "type": "expense",
+          "amount": 18000,
+          "category": "rent",
+          "day_of_month": 5,
+          "note": "每月房租自動扣款",
+          "last_run_date": "2026-10-01",
+          "active": true
+        },
+        {
+          "id": "bd97dc2f3290",
+          "name": "Netflix",
+          "type": "expense",
+          "amount": 270,
+          "category": "subscription",
+          "day_of_month": 10,
+          "note": "月費",
+          "last_run_date": null,
+          "active": true
+        },
+        {
+          "id": "7abf308d78d4",
+          "name": "Spotify",
+          "type": "expense",
+          "amount": 149,
+          "category": "subscription",
+          "day_of_month": 15,
+          "note": "個人方案",
+          "last_run_date": null,
+          "active": true
+        }
+      ]
+    },
+    "d12c91cf1c97": {
+      "id": "d12c91cf1c97",
+      "name": "旅遊基金",
+      "currency": "TWD",
+      "created_at": "2026-10-09",
+      "transactions": [
+        {
+          "id": "7c0f8c9da310",
+          "date": "2026-08-20",
+          "type": "income",
+          "amount": 5000.0,
+          "category": "salary",
+          "note": "出差津貼",
+          "recurring_id": null
+        },
+        {
+          "id": "1db9268e34e8",
+          "date": "2026-08-25",
+          "type": "expense",
+          "amount": 1280.0,
+          "category": "food",
+          "note": "餐廳",
+          "recurring_id": null
+        },
+        {
+          "id": "b439da67d193",
+          "date": "2026-08-30",
+          "type": "expense",
+          "amount": 850.0,
+          "category": "transport",
+          "note": "高鐵",
+          "recurring_id": null
+        },
+        {
+          "id": "2d4ea7ac2873",
+          "date": "2026-09-04",
+          "type": "income",
+          "amount": 3000.0,
+          "category": "bonus",
+          "note": "旅遊基金",
+          "recurring_id": null
+        },
+        {
+          "id": "89851af78ee5",
+          "date": "2026-09-19",
+          "type": "expense",
+          "amount": 2400.0,
+          "category": "entertainment",
+          "note": "景點門票",
+          "recurring_id": null
+        },
+        {
+          "id": "325868e52932",
+          "date": "2026-09-24",
+          "type": "expense",
+          "amount": 980.0,
+          "category": "food",
+          "note": "當地小吃",
+          "recurring_id": null
+        }
+      ],
+      "categories": [
+        {
+          "id": "salary",
+          "name": "薪資",
+          "icon": "mdi:cash-multiple",
+          "color": "#27AE60",
+          "type": "income",
+          "note_tags": [
+            "出差津貼"
+          ]
+        },
+        {
+          "id": "bonus",
+          "name": "獎金",
+          "icon": "mdi:gift",
+          "color": "#16A085",
+          "type": "income",
+          "note_tags": [
+            "旅遊基金"
+          ]
+        },
+        {
+          "id": "investment",
+          "name": "投資",
+          "icon": "mdi:chart-line",
+          "color": "#2980B9",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "side",
+          "name": "副業",
+          "icon": "mdi:briefcase-plus",
+          "color": "#8E44AD",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "income_other",
+          "name": "其他收入",
+          "icon": "mdi:cash-plus",
+          "color": "#95A5A6",
+          "type": "income",
+          "note_tags": []
+        },
+        {
+          "id": "food",
+          "name": "餐飲",
+          "icon": "mdi:silverware-fork-knife",
+          "color": "#E67E22",
+          "type": "expense",
+          "note_tags": [
+            "餐廳",
+            "當地小吃"
+          ]
+        },
+        {
+          "id": "transport",
+          "name": "交通",
+          "icon": "mdi:bus",
+          "color": "#3498DB",
+          "type": "expense",
+          "note_tags": [
+            "高鐵"
+          ]
+        },
+        {
+          "id": "shopping",
+          "name": "購物",
+          "icon": "mdi:shopping",
+          "color": "#9B59B6",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "entertainment",
+          "name": "娛樂",
+          "icon": "mdi:gamepad-variant",
+          "color": "#E74C3C",
+          "type": "expense",
+          "note_tags": [
+            "景點門票"
+          ]
+        },
+        {
+          "id": "household",
+          "name": "家用",
+          "icon": "mdi:home",
+          "color": "#16A085",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "medical",
+          "name": "醫療",
+          "icon": "mdi:hospital-box",
+          "color": "#C0392B",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "education",
+          "name": "教育",
+          "icon": "mdi:school",
+          "color": "#2980B9",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "subscription",
+          "name": "訂閱",
+          "icon": "mdi:repeat",
+          "color": "#8E44AD",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "rent",
+          "name": "房租",
+          "icon": "mdi:home-city",
+          "color": "#7F8C8D",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "utility",
+          "name": "水電瓦斯",
+          "icon": "mdi:flash",
+          "color": "#F39C12",
+          "type": "expense",
+          "note_tags": []
+        },
+        {
+          "id": "other",
+          "name": "其他",
+          "icon": "mdi:dots-horizontal",
+          "color": "#95A5A6",
+          "type": "expense",
+          "note_tags": []
+        }
+      ],
+      "budgets": {},
+      "recurring": []
+    }
+  },
+  "active_book_id": "3eae3a21f496"
+}

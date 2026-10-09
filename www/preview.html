@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>記帳本 — 本地預覽環境</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a1a;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-header {
+      background: #182230;
+      color: #f0f0f0;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 13px;
+      z-index: 100;
+    }
+    .preview-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 500;
+    }
+    .preview-badge {
+      background: #03a9f4;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .preview-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #e0e0e0;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preview-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+    .iframe-wrap {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-header">
+    <div class="preview-title">
+      <span class="preview-badge">LOCAL PREVIEW</span>
+      <span>Home Assistant 記帳本 (Budget Book) — 本地預覽開發環境</span>
+    </div>
+    <div class="preview-actions">
+      <button class="preview-btn" onclick="window.resetSampleData()">↺ 重設範例資料</button>
+      <button class="preview-btn" onclick="document.querySelector('iframe').contentWindow.location.reload()">⟳ 刷新頁面</button>
+    </div>
+  </div>
+
+  <home-assistant></home-assistant>
+
+  <div class="iframe-wrap">
+    <iframe src="index.html?v=6"></iframe>
+  </div>
+
+  <script src="mock_hass.js"></script>
+</body>
+</html>

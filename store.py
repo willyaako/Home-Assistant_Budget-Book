@@ -75,9 +75,9 @@ def _gen_id() -> str:
 def _make_default_categories() -> list[dict[str, Any]]:
     cats = []
     for c in DEFAULT_INCOME_CATEGORIES:
-        cats.append({**c, "type": "income"})
+        cats.append({**c, "type": "income", "note_tags": []})
     for c in DEFAULT_EXPENSE_CATEGORIES:
-        cats.append({**c, "type": "expense"})
+        cats.append({**c, "type": "expense", "note_tags": []})
     return cats
 
 
@@ -121,6 +121,29 @@ class BudgetStore:
             or self._data["active_book_id"] not in self._data["books"]
         ):
             self._data["active_book_id"] = next(iter(self._data["books"]))
+            await self.async_save()
+
+        # Ensure note_tags exists on all categories and migrate existing transaction notes
+        migrated = False
+        for book in self._data.get("books", {}).values():
+            tx_notes_by_cat: dict[str, list[str]] = {}
+            for tx in book.get("transactions", []):
+                cat_id = tx.get("category")
+                note = (tx.get("note") or "").strip()
+                if cat_id and note:
+                    tx_notes_by_cat.setdefault(cat_id, [])
+                    if note not in tx_notes_by_cat[cat_id]:
+                        tx_notes_by_cat[cat_id].append(note)
+
+            for cat in book.get("categories", []):
+                if "note_tags" not in cat:
+                    cat["note_tags"] = []
+                    migrated = True
+                for n in tx_notes_by_cat.get(cat.get("id"), []):
+                    if n not in cat["note_tags"]:
+                        cat["note_tags"].append(n)
+                        migrated = True
+        if migrated:
             await self.async_save()
 
     async def async_save(self) -> None:
@@ -175,6 +198,17 @@ class BudgetStore:
 
     # ---- Transactions ----
 
+    def _add_category_note_tag(self, book: dict[str, Any], category_id: str, tag: str) -> None:
+        tag = (tag or "").strip()
+        if not tag:
+            return
+        cat = next((c for c in book.get("categories", []) if c["id"] == category_id), None)
+        if not cat:
+            return
+        tags = cat.setdefault("note_tags", [])
+        if tag not in tags:
+            tags.append(tag)
+
     async def async_add_transaction(self, book_id: str, tx: dict[str, Any]) -> str:
         book = self._data["books"].get(book_id)
         if not book:
@@ -202,8 +236,53 @@ class BudgetStore:
             "recurring_id": tx.get("recurring_id"),
         }
         book["transactions"].append(entry)
+        note = (entry.get("note") or "").strip()
+        if note:
+            self._add_category_note_tag(book, entry["category"], note)
         await self.async_save()
         return tid
+
+    async def async_update_transaction(
+        self, book_id: str, tx_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any]:
+        book = self._data["books"].get(book_id)
+        if not book:
+            raise ValueError(f"Book {book_id} not found")
+
+        target = next((t for t in book["transactions"] if t["id"] == tx_id), None)
+        if not target:
+            raise ValueError(f"Transaction {tx_id} not found")
+
+        if "date" in updates:
+            try:
+                datetime.strptime(updates["date"], "%Y-%m-%d")
+                target["date"] = updates["date"]
+            except (ValueError, KeyError):
+                try:
+                    d = datetime.strptime(updates["date"], "%Y/%m/%d")
+                    target["date"] = d.strftime("%Y-%m-%d")
+                except (ValueError, KeyError):
+                    raise ValueError(f"invalid date: {updates.get('date')}")
+
+        if "time" in updates:
+            target["time"] = updates["time"] or None
+        if "type" in updates:
+            target["type"] = updates["type"]
+        if "amount" in updates:
+            target["amount"] = float(updates["amount"])
+        if "category" in updates:
+            target["category"] = updates["category"] or "other"
+        if "note" in updates:
+            target["note"] = updates.get("note") or ""
+        if "recurring_id" in updates:
+            target["recurring_id"] = updates.get("recurring_id")
+
+        note = (target.get("note") or "").strip()
+        if note:
+            self._add_category_note_tag(book, target["category"], note)
+
+        await self.async_save()
+        return target
 
     async def async_delete_transaction(self, book_id: str, tx_id: str) -> None:
         book = self._data["books"].get(book_id)
@@ -279,6 +358,7 @@ class BudgetStore:
             "icon": icon or ("mdi:cash-plus" if cat_type == "income" else "mdi:tag"),
             "color": color or "#95A5A6",
             "type": cat_type,
+            "note_tags": [],
         }
         categories.append(entry)
         await self.async_save()
@@ -332,6 +412,36 @@ class BudgetStore:
                 r["category"] = fallback_id
 
         await self.async_save()
+
+    async def async_add_note_tag(self, book_id: str, category_id: str, tag: str) -> None:
+        """Add a note tag to a category."""
+        book = self._data["books"].get(book_id)
+        if not book:
+            raise ValueError(f"Book {book_id} not found")
+        tag = (tag or "").strip()
+        if not tag:
+            return
+        cat = next((c for c in book.get("categories", []) if c["id"] == category_id), None)
+        if not cat:
+            raise ValueError(f"Category {category_id} not found")
+        tags = cat.setdefault("note_tags", [])
+        if tag not in tags:
+            tags.append(tag)
+            await self.async_save()
+
+    async def async_delete_note_tag(self, book_id: str, category_id: str, tag: str) -> None:
+        """Delete a note tag from a category."""
+        book = self._data["books"].get(book_id)
+        if not book:
+            raise ValueError(f"Book {book_id} not found")
+        tag = (tag or "").strip()
+        cat = next((c for c in book.get("categories", []) if c["id"] == category_id), None)
+        if not cat:
+            return
+        tags = cat.get("note_tags", [])
+        if tag in tags:
+            tags.remove(tag)
+            await self.async_save()
 
     # ---- Recurring ----
 
@@ -394,4 +504,23 @@ class BudgetStore:
             and self._data["books"]
         ):
             self._data["active_book_id"] = next(iter(self._data["books"]))
+
+        # Ensure note_tags exists on imported categories and migrate notes
+        for book in self._data.get("books", {}).values():
+            tx_notes_by_cat: dict[str, list[str]] = {}
+            for tx in book.get("transactions", []):
+                cat_id = tx.get("category")
+                note = (tx.get("note") or "").strip()
+                if cat_id and note:
+                    tx_notes_by_cat.setdefault(cat_id, [])
+                    if note not in tx_notes_by_cat[cat_id]:
+                        tx_notes_by_cat[cat_id].append(note)
+
+            for cat in book.get("categories", []):
+                if "note_tags" not in cat:
+                    cat["note_tags"] = []
+                for n in tx_notes_by_cat.get(cat.get("id"), []):
+                    if n not in cat["note_tags"]:
+                        cat["note_tags"].append(n)
+
         await self.async_save()
